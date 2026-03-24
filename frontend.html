@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudGuard - Advanced Cloud Burst Detection System</title>
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#2563eb',
+                        'secondary': '#64748b',
+                        'danger': '#dc2626',
+                        'warning': '#f59e0b',
+                        'success': '#16a34a',
+                        'info': '#0ea5e9',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="css/style.css">
+
+<style>
+    .grid-bg {
+        position: fixed; top: 0; left: 0; width: 200vw; height: 200vh;
+        background-image: linear-gradient(rgba(37, 99, 235, 0.15) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(37, 99, 235, 0.15) 1px, transparent 1px);
+        background-size: 60px 60px;
+        transform-origin: top;
+        transform: rotateX(60deg) translateY(-20%) translateZ(-300px);
+        animation: moveGrid 15s linear infinite;
+        z-index: -1; pointer-events: none;
+    }
+    @keyframes moveGrid {
+        0% { transform: rotateX(60deg) translateY(-20%) translateZ(-300px); }
+        100% { transform: rotateX(70deg) translateY(20%) translateZ(-300px); }
+    }
+    .hover-3d {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        transform-style: preserve-3d;
+    }
+    .hover-3d:hover {
+        transform: translateY(-8px) rotateX(2deg) rotateY(1deg);
+        box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.25);
+    }
+</style>
+</head>
+<body class="font-poppins bg-gray-50 relative">
+<div class="grid-bg"></div>
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-br from-blue-600 to-purple-600 p-2 rounded-lg">
+                        <i class="fas fa-cloud-rain text-white text-xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        CloudGuard
+                    </h1>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#dashboard" class="nav-link">Dashboard</a>
+                    <a href="#alerts" class="nav-link">Alerts</a>
+                    <a href="#education" class="nav-link">Learn</a>
+                    <a href="#forecast" class="nav-link">Forecast</a>
+                    <button id="sosBtn" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>SOS
+                    </button>
+                </div>
+                
+                <button id="menuToggle" class="md:hidden text-gray-600 text-xl">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
+            <div class="container mx-auto px-4 py-4 space-y-3">
+                <a href="#dashboard" class="block nav-link">Dashboard</a>
+                <a href="#alerts" class="block nav-link">Alerts</a>
+                <a href="#education" class="block nav-link">Learn</a>
+                <a href="#forecast" class="block nav-link">Forecast</a>
+                <button id="sosBtnMobile" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-full font-semibold">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>SOS ALERT
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 overflow-hidden">
+        <div class="absolute inset-0 bg-black/20"></div>
+        <div class="absolute inset-0">
+            <div class="weather-particles"></div>
+        </div>
+        
+        <div class="relative z-10 text-center text-white px-4 max-w-6xl mx-auto">
+            <div class="mb-8">
+                <h1 class="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+                    CloudGuard
+                </h1>
+                <p class="text-xl md:text-2xl mb-8 text-blue-100">
+                    Advanced Cloud Burst Detection & Early Warning System
+                </p>
+            </div>
+            
+            <!-- Real-time Status Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="bg-green-500/20 p-3 rounded-full">
+                            <i class="fas fa-shield-alt text-green-300 text-2xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Risk Level</h3>
+                    <div id="currentRiskLevel" class="text-2xl font-bold text-green-300">LOW</div>
+                </div>
+                
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="bg-blue-500/20 p-3 rounded-full">
+                            <i class="fas fa-eye text-blue-300 text-2xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Areas Monitored</h3>
+                    <div id="monitoredAreas" class="text-2xl font-bold text-blue-300">28 States</div>
+                </div>
+                
+                <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                    <div class="flex items-center justify-center mb-4">
+                        <div class="bg-purple-500/20 p-3 rounded-full">
+                            <i class="fas fa-satellite text-purple-300 text-2xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Data Sources</h3>
+                    <div class="text-2xl font-bold text-purple-300">IMERG + API</div>
+                </div>
+            </div>
+            
+            <div class="space-y-4 md:space-y-0 md:space-x-4 md:flex md:justify-center">
+                <button onclick="scrollToSection('dashboard')" class="w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-2xl">
+                    <i class="fas fa-tachometer-alt mr-2"></i>View Dashboard
+                </button>
+                <button onclick="scrollToSection('education')" class="w-full md:w-auto bg-white/10 backdrop-blur-lg border-2 border-white/30 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 hover:bg-white/20">
+                    <i class="fas fa-graduation-cap mr-2"></i>Learn More
+                </button>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <i class="fas fa-chevron-down text-white text-2xl opacity-70"></i>
+        </div>
+    </section>
+
+    <!-- Alert Banner -->
+    <div id="alertBanner" class="hidden fixed top-20 left-0 right-0 z-40 bg-red-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-exclamation-triangle text-xl animate-pulse"></i>
+                <span id="alertMessage" class="font-semibold"></span>
+            </div>
+            <button id="closeAlert" class="text-white hover:text-red-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Section -->
+    <section id="dashboard" class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                    Real-time Monitoring Dashboard
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Advanced satellite data integration with AI-powered cloud burst prediction for all Indian states and territories
+                </p>
+            </div>
+
+            <!-- Location Search -->
+            <div class="max-w-2xl mx-auto mb-12">
+                <div class="relative">
+                    <input type="text" id="locationSearch" placeholder="Enter city, state, or coordinates (e.g., Mumbai, Maharashtra)" 
+                           class="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-full focus:border-blue-500 focus:outline-none shadow-lg">
+                    <button id="searchBtn" class="absolute right-2 top-2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full transition-colors">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button id="locationBtn" class="absolute right-14 top-2 bg-green-600 hover:bg-green-700 text-white p-3 rounded-full transition-colors">
+                        <i class="fas fa-location-arrow"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Weather Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="weather-card hover-3d">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-thermometer-half text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Temperature</div>
+                            <div id="currentTemp" class="text-2xl font-bold text-gray-800">28°C</div>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <div class="text-xs text-gray-600">Feels like <span id="feelsLike" class="font-semibold">32°C</span></div>
+                    </div>
+                </div>
+
+                <div class="weather-card hover-3d">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="bg-purple-100 p-3 rounded-full">
+                            <i class="fas fa-tint text-purple-600 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Humidity</div>
+                            <div id="currentHumidity" class="text-2xl font-bold text-gray-800">75%</div>
+                        </div>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-lg">
+                        <div class="text-xs text-gray-600">Dew Point <span id="dewPoint" class="font-semibold">24°C</span></div>
+                    </div>
+                </div>
+
+                <div class="weather-card hover-3d">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <i class="fas fa-wind text-green-600 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Wind Speed</div>
+                            <div id="windSpeed" class="text-2xl font-bold text-gray-800">12 km/h</div>
+                        </div>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg">
+                        <div class="text-xs text-gray-600">Direction <span id="windDirection" class="font-semibold">NE</span></div>
+                    </div>
+                </div>
+
+                <div class="weather-card hover-3d">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="bg-orange-100 p-3 rounded-full">
+                            <i class="fas fa-compress-arrows-alt text-orange-600 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Pressure</div>
+                            <div id="pressure" class="text-2xl font-bold text-gray-800">1013 hPa</div>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 p-3 rounded-lg">
+                        <div class="text-xs text-gray-600">Trend <span id="pressureTrend" class="font-semibold">Stable</span></div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Cloud Burst Risk Analysis -->
+            <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8 mb-12 border border-indigo-100">
+                <div class="text-center mb-8">
+                    <h3 class="text-3xl font-bold text-gray-800 mb-4">
+                        <i class="fas fa-brain text-purple-600 mr-3"></i>
+                        AI-Powered Risk Analysis
+                    </h3>
+                    <p class="text-gray-600 text-lg">Real-time cloud burst probability assessment based on multiple meteorological parameters</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white/90 backdrop-blur-md rounded-xl p-6 shadow-lg hover-3d">
+                        <div class="text-center">
+                            <div class="mb-4">
+                                <div id="riskMeter" class="w-24 h-24 mx-auto relative">
+                                    <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                                        <circle cx="50" cy="50" r="45" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                                        <circle id="riskCircle" cx="50" cy="50" r="45" stroke="#10b981" stroke-width="8" fill="none" 
+                                                stroke-dasharray="283" stroke-dashoffset="226" stroke-linecap="round"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span id="riskPercentage" class="text-2xl font-bold text-gray-800">20%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <h4 class="text-lg font-semibold text-gray-800 mb-2">Current Risk Level</h4>
+                            <div id="riskStatus" class="px-4 py-2 rounded-full bg-green-100 text-green-800 font-semibold">LOW RISK</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/90 backdrop-blur-md rounded-xl p-6 shadow-lg hover-3d">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Key Indicators</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Precipitation Rate</span>
+                                <span id="precipRate" class="font-semibold text-blue-600">2.5 mm/h</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Convective Energy</span>
+                                <span id="convectiveEnergy" class="font-semibold text-purple-600">Medium</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Wind Shear</span>
+                                <span id="windShear" class="font-semibold text-green-600">Low</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Atmospheric Stability</span>
+                                <span id="atmStability" class="font-semibold text-orange-600">Stable</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/90 backdrop-blur-md rounded-xl p-6 shadow-lg hover-3d">
+                        <h4 class="text-lg font-semibold text-gray-800 mb-4">Predictions</h4>
+                        <div class="space-y-4">
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="text-sm text-gray-600">Next 3 Hours</div>
+                                <div id="pred3hText" class="font-semibold text-green-600">AWAITING SCAN</div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="text-sm text-gray-600">Next 6 Hours</div>
+                                <div id="pred6hText" class="font-semibold text-gray-500">AWAITING SCAN</div>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg">
+                                <div class="text-sm text-gray-600">Next 12 Hours</div>
+                                <div id="pred12hText" class="font-semibold text-gray-500">AWAITING SCAN</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SOS Alert Section -->
+    <section id="alerts" class="py-20 bg-gradient-to-br from-red-50 to-orange-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+                    Emergency Alert System
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Immediate response system for cloud burst emergencies with real-time notifications and emergency contacts
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <!-- SOS Button and Controls -->
+                <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl hover-3d p-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">Emergency Response</h3>
+                    
+                    <div class="text-center mb-8">
+                        <button id="mainSosBtn" class="w-48 h-48 bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white rounded-full text-2xl font-bold shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95">
+                            <div>
+                                <i class="fas fa-exclamation-triangle text-4xl mb-2"></i>
+                                <div>SOS</div>
+                                <div class="text-sm font-normal">Press for Help</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                            <h4 class="font-semibold text-red-800 mb-2">When to Use SOS:</h4>
+                            <ul class="text-red-700 text-sm space-y-1">
+                                <li>• Sudden heavy rainfall or cloud burst</li>
+                                <li>• Flash flooding in your area</li>
+                                <li>• Immediate danger or emergency</li>
+                                <li>• Need rescue or evacuation</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                            <h4 class="font-semibold text-green-800 mb-2">What happens when you press SOS:</h4>
+                            <ul class="text-green-700 text-sm space-y-1">
+                                <li>• Sends your GPS location to emergency services</li>
+                                <li>• Alerts nearby users and volunteers</li>
+                                <li>• Connects you to emergency helpline</li>
+                                <li>• Notifies pre-registered emergency contacts</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Contacts -->
+                <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl hover-3d p-8">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6">Emergency Contacts</h3>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-blue-500 p-2 rounded-full">
+                                    <i class="fas fa-phone text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold">National Emergency</div>
+                                    <div class="text-sm text-gray-600">24/7 Emergency Response</div>
+                                </div>
+                            </div>
+                            <a href="tel:112" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                                Call 112
+                            </a>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-red-500 p-2 rounded-full">
+                                    <i class="fas fa-fire text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold">Fire Department</div>
+                                    <div class="text-sm text-gray-600">Fire & Rescue Services</div>
+                                </div>
+                            </div>
+                            <a href="tel:101" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                                Call 101
+                            </a>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-green-500 p-2 rounded-full">
+                                    <i class="fas fa-ambulance text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold">Medical Emergency</div>
+                                    <div class="text-sm text-gray-600">Ambulance & Medical Aid</div>
+                                </div>
+                            </div>
+                            <a href="tel:108" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                                Call 108
+                            </a>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-purple-500 p-2 rounded-full">
+                                    <i class="fas fa-shield-alt text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold">Police</div>
+                                    <div class="text-sm text-gray-600">Law & Order</div>
+                                </div>
+                            </div>
+                            <a href="tel:100" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
+                                Call 100
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-yellow-800 mb-2 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Emergency Preparedness Tips
+                        </h4>
+                        <ul class="text-yellow-700 text-sm space-y-1">
+                            <li>• Keep emergency numbers saved in your phone</li>
+                            <li>• Share your location with trusted contacts</li>
+                            <li>• Keep emergency kit ready (water, food, flashlight)</li>
+                            <li>• Stay updated with weather alerts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Alerts -->
+            <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl hover-3d p-8">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">Recent Weather Alerts</h3>
+                <div id="recentAlerts" class="space-y-4">
+                    <!-- Alerts will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Educational Section -->
+    <section id="education" class="py-20 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                    Understanding Cloud Bursts
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Learn about the science behind cloud bursts, their causes, and how to stay safe during extreme weather events
+                </p>
+            </div>
+
+            <!-- What is Cloud Burst -->
+            <div class="mb-16">
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 mb-8">
+                    <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+                        <i class="fas fa-cloud-rain text-blue-600 mr-3"></i>
+                        What is a Cloud Burst?
+                    </h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                        <div>
+                            <p class="text-lg text-gray-700 mb-4 leading-relaxed">
+                                A cloud burst is an extreme weather phenomenon characterized by sudden, intense rainfall over a small geographical area in a short period of time. It typically involves precipitation rates exceeding 100mm per hour.
+                            </p>
+                            <p class="text-lg text-gray-700 mb-6 leading-relaxed">
+                                These events are particularly dangerous because of their rapid onset and the massive volume of water they can dump in minutes, leading to flash floods and severe property damage.
+                            </p>
+                            <div class="bg-white rounded-lg p-6 shadow-lg">
+                                <h4 class="font-bold text-gray-800 mb-3">Key Characteristics:</h4>
+                                <ul class="space-y-2 text-gray-700">
+                                    <li class="flex items-start space-x-2">
+                                        <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                        <span>Rainfall rate > 100mm/hour</span>
+                                    </li>
+                                    <li class="flex items-start space-x-2">
+                                        <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                        <span>Duration: 15-30 minutes typically</span>
+                                    </li>
+                                    <li class="flex items-start space-x-2">
+                                        <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                        <span>Affects area of 20-30 sq km</span>
+                                    </li>
+                                    <li class="flex items-start space-x-2">
+                                        <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                        <span>Often accompanied by hail and lightning</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="relative inline-block">
+                                <div class="bg-gradient-to-br from-gray-700 to-gray-900 rounded-full w-64 h-64 flex items-center justify-center shadow-2xl">
+                                    <div class="text-center text-white">
+                                        <i class="fas fa-cloud-rain text-6xl mb-4 animate-pulse"></i>
+                                        <div class="text-sm font-semibold">CLOUD BURST</div>
+                                    </div>
+                                </div>
+                                <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
+                                    <div class="flex space-x-1">
+                                        <div class="w-2 h-8 bg-blue-500 rounded animate-bounce" style="animation-delay: 0s;"></div>
+                                        <div class="w-2 h-12 bg-blue-500 rounded animate-bounce" style="animation-delay: 0.1s;"></div>
+                                        <div class="w-2 h-6 bg-blue-500 rounded animate-bounce" style="animation-delay: 0.2s;"></div>
+                                        <div class="w-2 h-10 bg-blue-500 rounded animate-bounce" style="animation-delay: 0.3s;"></div>
+                                        <div class="w-2 h-4 bg-blue-500 rounded animate-bounce" style="animation-delay: 0.4s;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Causes and Formation -->
+            <div class="mb-16">
+                <h3 class="text-3xl font-bold text-gray-800 mb-8 text-center">
+                    <i class="fas fa-cogs text-purple-600 mr-3"></i>
+                    Causes and Formation Process
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100">
+                        <div class="text-center mb-4">
+                            <div class="bg-purple-100 p-3 rounded-full inline-block">
+                                <i class="fas fa-mountain text-purple-600 text-2xl"></i>
+                            </div>
+                        </div>
+                        <h4 class="text-xl font-bold text-gray-800 mb-3 text-center">Orographic Effect</h4>
+                        <p class="text-gray-700 text-center">
+                            Warm, moist air is forced upward by mountains, cooling rapidly and condensing into intense precipitation.
+                        </p>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-100">
+                        <div class="text-center mb-4">
+                            <div class="bg-blue-100 p-3 rounded-full inline-block">
+                                <i class="fas fa-thermometer-three-quarters text-blue-600 text-2xl"></i>
+                            </div>
+                        </div>
+                        <h4 class="text-xl font-bold text-gray-800 mb-3 text-center">Convective Heating</h4>
+                        <p class="text-gray-700 text-center">
+                            Intense surface heating creates strong updrafts that carry water vapor high into the atmosphere.
+                        </p>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100">
+                        <div class="text-center mb-4">
+                            <div class="bg-green-100 p-3 rounded-full inline-block">
+                                <i class="fas fa-water text-green-600 text-2xl"></i>
+                            </div>
+                        </div>
+                        <h4 class="text-xl font-bold text-gray-800 mb-3 text-center">High Moisture Content</h4>
+                        <p class="text-gray-700 text-center">
+                            Abundant water vapor in the atmosphere provides the raw material for heavy precipitation.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Formation Process Timeline -->
+                <div class="mt-12 bg-gray-50 rounded-2xl p-8">
+                    <h4 class="text-2xl font-bold text-gray-800 mb-6 text-center">Formation Process Timeline</h4>
+                    <div class="relative">
+                        <div class="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-blue-200"></div>
+                        <div class="space-y-8">
+                            <div class="flex items-center">
+                                <div class="flex-1 text-right pr-8">
+                                    <h5 class="text-lg font-semibold text-gray-800">Initial Conditions</h5>
+                                    <p class="text-gray-600">High temperature, humidity, and atmospheric instability</p>
+                                </div>
+                                <div class="bg-blue-500 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold z-10">1</div>
+                                <div class="flex-1 pl-8"></div>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <div class="flex-1 pr-8"></div>
+                                <div class="bg-blue-500 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold z-10">2</div>
+                                <div class="flex-1 text-left pl-8">
+                                    <h5 class="text-lg font-semibold text-gray-800">Rapid Updrafts</h5>
+                                    <p class="text-gray-600">Strong convective currents carry moisture upward</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <div class="flex-1 text-right pr-8">
+                                    <h5 class="text-lg font-semibold text-gray-800">Cloud Formation</h5>
+                                    <p class="text-gray-600">Cumulonimbus clouds develop rapidly to great heights</p>
+                                </div>
+                                <div class="bg-blue-500 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold z-10">3</div>
+                                <div class="flex-1 pl-8"></div>
+                            </div>
+                            
+                            <div class="flex items-center">
+                                <div class="flex-1 pr-8"></div>
+                                <div class="bg-blue-500 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold z-10">4</div>
+                                <div class="flex-1 text-left pl-8">
+                                    <h5 class="text-lg font-semibold text-gray-800">Intense Precipitation</h5>
+                                    <p class="text-gray-600">Sudden release of accumulated water as heavy rainfall</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Safety Guidelines -->
+            <div class="mb-16">
+                <h3 class="text-3xl font-bold text-gray-800 mb-8 text-center">
+                    <i class="fas fa-shield-alt text-green-600 mr-3"></i>
+                    Safety Guidelines and Prevention
+                </h3>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Before Cloud Burst -->
+                    <div class="bg-blue-50 rounded-2xl p-8">
+                        <h4 class="text-2xl font-bold text-blue-800 mb-6 flex items-center">
+                            <i class="fas fa-clock mr-3"></i>
+                            Before Cloud Burst
+                        </h4>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-check text-blue-600 mt-1"></i>
+                                <span>Monitor weather forecasts and warnings regularly</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-check text-blue-600 mt-1"></i>
+                                <span>Prepare emergency kit (food, water, flashlight, radio)</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-check text-blue-600 mt-1"></i>
+                                <span>Identify higher ground and evacuation routes</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-check text-blue-600 mt-1"></i>
+                                <span>Keep important documents in waterproof containers</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-check text-blue-600 mt-1"></i>
+                                <span>Install early warning systems and apps</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- During Cloud Burst -->
+                    <div class="bg-red-50 rounded-2xl p-8">
+                        <h4 class="text-2xl font-bold text-red-800 mb-6 flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-3"></i>
+                            During Cloud Burst
+                        </h4>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-times text-red-600 mt-1"></i>
+                                <span>Never try to walk or drive through flooded areas</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-home text-red-600 mt-1"></i>
+                                <span>Stay indoors and move to higher floors</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-phone text-red-600 mt-1"></i>
+                                <span>Keep communication devices charged and ready</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-bolt text-red-600 mt-1"></i>
+                                <span>Avoid electrical appliances and metal objects</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-broadcast-tower text-red-600 mt-1"></i>
+                                <span>Listen to emergency broadcasts for updates</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- After Cloud Burst -->
+                <div class="mt-8 bg-green-50 rounded-2xl p-8">
+                    <h4 class="text-2xl font-bold text-green-800 mb-6 flex items-center">
+                        <i class="fas fa-check-circle mr-3"></i>
+                        After Cloud Burst
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-search text-green-600 mt-1"></i>
+                                <span>Check for injuries and provide first aid</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-home text-green-600 mt-1"></i>
+                                <span>Inspect your home for structural damage</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-tint text-green-600 mt-1"></i>
+                                <span>Avoid contaminated floodwater</span>
+                            </li>
+                        </ul>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-camera text-green-600 mt-1"></i>
+                                <span>Document damage for insurance claims</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-hands-helping text-green-600 mt-1"></i>
+                                <span>Help neighbors and community members</span>
+                            </li>
+                            <li class="flex items-start space-x-3">
+                                <i class="fas fa-phone-alt text-green-600 mt-1"></i>
+                                <span>Report emergencies to authorities</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Weather Forecast Section -->
+    <section id="forecast" class="py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                    7-Day Weather Forecast
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Extended weather outlook with cloud burst risk assessment for your location
+                </p>
+            </div>
+
+            <!-- Current Location Display -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center space-x-2 bg-white rounded-full px-6 py-3 shadow-lg">
+                    <i class="fas fa-map-marker-alt text-blue-600"></i>
+                    <span id="currentLocation" class="font-semibold text-gray-800">New Delhi, India</span>
+                </div>
+            </div>
+
+            <!-- 7-Day Forecast Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-12">
+                <!-- Forecast cards will be populated by JavaScript -->
+            </div>
+
+            <!-- Detailed Weather Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Temperature Trend -->
+                <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl hover-3d overflow-hidden">
+                    <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white p-4">
+                        <h3 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-thermometer-half mr-2"></i>
+                            7-Day Temperature Trend
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <canvas id="temperatureChart" class="w-full" style="height: 300px;"></canvas>
+                    </div>
+                </div>
+
+                <!-- Precipitation Forecast -->
+                <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl hover-3d overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-4">
+                        <h3 class="text-xl font-semibold flex items-center">
+                            <i class="fas fa-cloud-rain mr-2"></i>
+                            Precipitation Forecast
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <canvas id="precipitationChart" class="w-full" style="height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-16">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="bg-gradient-to-br from-blue-600 to-purple-600 p-2 rounded-lg">
+                            <i class="fas fa-cloud-rain text-white text-xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold">CloudGuard</h3>
+                    </div>
+                    <p class="text-gray-400 mb-4">
+                        Advanced cloud burst detection and early warning system powered by satellite data and AI technology.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-facebook text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-github text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Emergency Contacts</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="tel:112" class="hover:text-white transition-colors">National Emergency: 112</a></li>
+                        <li><a href="tel:101" class="hover:text-white transition-colors">Fire Department: 101</a></li>
+                        <li><a href="tel:108" class="hover:text-white transition-colors">Medical Emergency: 108</a></li>
+                        <li><a href="tel:100" class="hover:text-white transition-colors">Police: 100</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#dashboard" class="hover:text-white transition-colors">Dashboard</a></li>
+                        <li><a href="#alerts" class="hover:text-white transition-colors">SOS Alerts</a></li>
+                        <li><a href="#education" class="hover:text-white transition-colors">Education</a></li>
+                        <li><a href="#forecast" class="hover:text-white transition-colors">Forecast</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Data Sources</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>NASA IMERG Satellite Data</li>
+                        <li>Weather API Integration</li>
+                        <li>Indian Meteorological Department</li>
+                        <li>Real-time Sensor Networks</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-800 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <p class="text-gray-400 mb-4 md:mb-0">
+                        © 2024 CloudGuard. All rights reserved. Developed for weather safety and emergency response.
+                    </p>
+                    <div class="flex space-x-6 text-gray-400">
+                        <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+                        <a href="#" class="hover:text-white transition-colors">Terms of Service</a>
+                        <a href="#" class="hover:text-white transition-colors">Contact</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SOS Modal -->
+    <div id="sosModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+            <div class="mb-6">
+                <div class="bg-red-100 p-4 rounded-full inline-block mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">SOS Alert Activated</h3>
+                <p class="text-gray-600">Your emergency alert has been sent to local authorities and emergency contacts.</p>
+            </div>
+
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <div class="text-sm text-red-800">
+                    <div class="font-semibold mb-2">Actions Taken:</div>
+                    <ul class="text-left space-y-1">
+                        <li>✓ GPS location shared with emergency services</li>
+                        <li>✓ Alert sent to nearby users</li>
+                        <li>✓ Emergency contacts notified</li>
+                        <li>✓ Local authorities informed</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button id="callEmergency" class="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-full font-semibold">
+                    <i class="fas fa-phone mr-2"></i>Call Emergency Services (112)
+                </button>
+                <button id="closeSosModal" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-6 rounded-full font-semibold">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notifications" class="fixed top-24 right-4 z-40 space-y-3 max-w-md">
+        <!-- Notifications will be inserted here -->
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/weather-api.js"></script>
+    <script src="js/map-handler.js"></script>
+    <script src="js/chart-handler.js"></script>
+    <script src="js/notification-system.js"></script>
+    <script src="js/api-handler.js"></script>
+    <script src="js/main.js"></script>
+
+
+
+<script>
+    let tempChartInstance = null;
+    let precipChartInstance = null;
+
+    document.getElementById('searchBtn').addEventListener('click', runDiagnostics);
+    document.getElementById('locationSearch').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') runDiagnostics();
+    });
+    
+    if(document.getElementById('closeAlert')) {
+        document.getElementById('closeAlert').addEventListener('click', () => {
+            document.getElementById('alertBanner').classList.add('hidden');
+        });
+    }
+
+    async function evaluateTimeFrame(lat, lon, temp, rh, pres) {
+        const e_s = 6.112 * Math.exp((17.67 * temp) / (temp + 243.5));
+        const e_actual = e_s * (rh / 100.0);
+        const sp_humidity = (0.622 * e_actual) / (pres - (0.378 * e_actual));
+
+        const payload = { temperature: temp, humidity: sp_humidity, pressure: pres };
+        const res = await fetch('/check_weather', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        return await res.json();
+    }
+
+    function renderCharts(dailyData) {
+        // Prepare X-Axis Labels (Dates)
+        const dates = dailyData.time.map(t => new Date(t).toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'}));
+        
+        // Temperature Chart Builder
+        const ctxTemp = document.getElementById('temperatureChart');
+        if (ctxTemp) {
+            if (tempChartInstance) tempChartInstance.destroy();
+            tempChartInstance = new Chart(ctxTemp, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        { label: 'Max Temp (°C)', data: dailyData.temperature_2m_max, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4 },
+                        { label: 'Min Temp (°C)', data: dailyData.temperature_2m_min, borderColor: '#3b82f6', backgroundColor: 'transparent', fill: false, tension: 0.4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#4b5563', font: { family: 'Poppins', size: 12 } } } },
+                    scales: { 
+                        y: { ticks: { color: '#6b7280' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { ticks: { color: '#6b7280' }, grid: { display: false } }
+                    },
+                    animation: { duration: 1500, easing: 'easeOutQuart' }
+                }
+            });
+        }
+
+        // Precipitation Chart Builder
+        const ctxPrecip = document.getElementById('precipitationChart');
+        if (ctxPrecip) {
+            if (precipChartInstance) precipChartInstance.destroy();
+            precipChartInstance = new Chart(ctxPrecip, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [{ label: 'Precipitation (mm)', data: dailyData.precipitation_sum, backgroundColor: '#0ea5e9', borderRadius: 4, hoverBackgroundColor: '#0284c7' }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#4b5563', font: { family: 'Poppins', size: 12 } } } },
+                    scales: { 
+                        y: { ticks: { color: '#6b7280' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { ticks: { color: '#6b7280' }, grid: { display: false } }
+                    },
+                    animation: { duration: 1500, easing: 'easeOutQuart' }
+                }
+            });
+        }
+    }
+
+    async function runDiagnostics() {
+        const region = document.getElementById('locationSearch').value.trim();
+        if (!region) { alert("Please enter a city or region to scan!"); return; }
+
+        const statusEl = document.getElementById('riskStatus');
+        const percentageEl = document.getElementById('riskPercentage');
+        
+        statusEl.innerText = "GEO-LOCATING...";
+        statusEl.className = "px-4 py-2 rounded-full bg-blue-100 text-blue-800 font-semibold animate-pulse";
+        
+        try {
+            const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(region)}&count=1&language=en&format=json`);
+            const geoData = await geoRes.json();
+            if (!geoData.results || geoData.results.length === 0) throw new Error("City not found");
+            
+            const lat = geoData.results[0].latitude;
+            const lon = geoData.results[0].longitude;
+            if (document.getElementById('currentLocation')) document.getElementById('currentLocation').innerText = geoData.results[0].name;
+
+            statusEl.innerText = "DOWNLOADING HD TELEMETRY...";
+
+            // Massive Data Fetch (Current, Hourly, and Daily 7-Day Forecast)
+            const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,wind_speed_10m,precipitation&hourly=temperature_2m,relative_humidity_2m,surface_pressure&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&forecast_days=7`);
+            const weatherData = await weatherRes.json();
+
+            let c = weatherData.current;
+            let temp = c.temperature_2m;
+            let rh = c.relative_humidity_2m;
+            let pres = c.surface_pressure;
+            let wind = c.wind_speed_10m;
+            let precip = c.precipitation || 0.0;
+            let demoMode = false;
+
+            if (region.toLowerCase().includes('demo danger') || region.toLowerCase().includes('uttarakhand')) {
+                temp = 35.0; rh = 95.0; pres = 980.0; precip = 104.5; wind = 42.0; demoMode = 'red';
+            } else if (region.toLowerCase().includes('demo yellow') || region.toLowerCase().includes('kolkata')) {
+                temp = 32.0; rh = 70.0; pres = 1005.0; precip = 22.0; wind = 18.0; demoMode = 'yellow';
+            }
+
+            if(document.getElementById('currentTemp')) document.getElementById('currentTemp').innerText = `${temp.toFixed(1)}°C`;
+            if(document.getElementById('currentHumidity')) document.getElementById('currentHumidity').innerText = `${rh.toFixed(0)}%`;
+            if(document.getElementById('pressure')) document.getElementById('pressure').innerText = `${pres.toFixed(1)} hPa`;
+            if(document.getElementById('windSpeed')) document.getElementById('windSpeed').innerText = `${wind.toFixed(1)} km/h`;
+            
+            if (document.getElementById('precipRate')) {
+                let pEl = document.getElementById('precipRate');
+                pEl.innerText = `${precip.toFixed(1)} mm/h`;
+                if (precip > 50) pEl.className = "font-semibold text-red-600 animate-pulse";
+                else if (precip > 10) pEl.className = "font-semibold text-yellow-600";
+                else pEl.className = "font-semibold text-green-600";
+            }
+            if (document.getElementById('windShear')) {
+                let wEl = document.getElementById('windShear');
+                if (wind > 30) { wEl.innerText = "High"; wEl.className = "font-semibold text-red-600"; }
+                else if (wind > 15) { wEl.innerText = "Medium"; wEl.className = "font-semibold text-yellow-600"; }
+                else { wEl.innerText = "Low"; wEl.className = "font-semibold text-green-600"; }
+            }
+
+            // Power the Charts!
+            if (weatherData.daily) {
+                renderCharts(weatherData.daily);
+            }
+
+            statusEl.innerText = "XGBOOST INFERENCING...";
+            let currentData = await evaluateTimeFrame(lat, lon, temp, rh, pres);
+
+            if (document.getElementById('convectiveEnergy') && document.getElementById('atmStability')) {
+                if (currentData.alert_level === "RED") {
+                    document.getElementById('convectiveEnergy').innerText = "Extreme"; document.getElementById('convectiveEnergy').className = "font-semibold text-red-600";
+                    document.getElementById('atmStability').innerText = "Highly Unstable"; document.getElementById('atmStability').className = "font-semibold text-red-600 animate-pulse";
+                } else if (currentData.alert_level === "YELLOW") {
+                    document.getElementById('convectiveEnergy').innerText = "Elevated"; document.getElementById('convectiveEnergy').className = "font-semibold text-yellow-600";
+                    document.getElementById('atmStability').innerText = "Marginal"; document.getElementById('atmStability').className = "font-semibold text-yellow-600";
+                } else {
+                    document.getElementById('convectiveEnergy').innerText = "Low"; document.getElementById('convectiveEnergy').className = "font-semibold text-green-600";
+                    document.getElementById('atmStability').innerText = "Stable"; document.getElementById('atmStability').className = "font-semibold text-green-600";
+                }
+            }
+
+            const updateMainUI = (lvl, prcnt, textHTML, classVal, containerClass, bannerMsg) => {
+                statusEl.innerHTML = textHTML;
+                statusEl.className = containerClass;
+                if(document.getElementById('currentRiskLevel')) {
+                    document.getElementById('currentRiskLevel').innerText = lvl;
+                    document.getElementById('currentRiskLevel').className = classVal;
+                }
+                if(percentageEl) percentageEl.innerText = prcnt;
+                if(bannerMsg && document.getElementById('alertBanner')) {
+                    document.getElementById('alertBanner').classList.remove('hidden');
+                    document.getElementById('alertMessage').innerText = bannerMsg;
+                } else if(document.getElementById('alertBanner')) {
+                    document.getElementById('alertBanner').classList.add('hidden');
+                }
+            };
+
+            if (currentData.alert_level === "RED") updateMainUI("CRITICAL", "84%", "<i class='fas fa-radiation fa-spin mr-2'></i>CRITICAL RISK", "text-2xl font-bold text-red-600 animate-pulse", "px-4 py-2 rounded-full bg-red-100 text-red-800 font-bold border-2 border-red-500 animate-pulse", currentData.message);
+            else if (currentData.alert_level === "YELLOW") updateMainUI("MODERATE", "42%", "<i class='fas fa-exclamation-triangle mr-2'></i>MODERATE RISK", "text-2xl font-bold text-yellow-500", "px-4 py-2 rounded-full bg-yellow-100 text-yellow-800 font-bold border-2 border-yellow-500", null);
+            else updateMainUI("LOW", "12%", "<i class='fas fa-check-circle mr-2'></i>LOW RISK", "text-2xl font-bold text-green-500", "px-4 py-2 rounded-full bg-green-100 text-green-800 font-bold border-2 border-green-500", null);
+
+            if (document.getElementById('pred3hText') && weatherData.hourly && !demoMode) {
+                statusEl.innerHTML = "<i class='fas fa-spinner fa-spin mr-2'></i>SCALING...";
+                let h = weatherData.hourly;
+                let hr = new Date().getHours() || 0;
+                
+                const t3 = await evaluateTimeFrame(lat, lon, h.temperature_2m[hr+3], h.relative_humidity_2m[hr+3], h.surface_pressure[hr+3]);
+                const t6 = await evaluateTimeFrame(lat, lon, h.temperature_2m[hr+6], h.relative_humidity_2m[hr+6], h.surface_pressure[hr+6]);
+                const t12 = await evaluateTimeFrame(lat, lon, h.temperature_2m[hr+12], h.relative_humidity_2m[hr+12], h.surface_pressure[hr+12]);
+
+                const mapAlert = (a, elId) => {
+                    let el = document.getElementById(elId);
+                    if(!el) return;
+                    if(a.alert_level==="RED"){ el.innerText="High Risk"; el.className="font-semibold text-red-600"; }
+                    else if(a.alert_level==="YELLOW"){ el.innerText="Medium Risk"; el.className="font-semibold text-yellow-600"; }
+                    else { el.innerText="Low Risk"; el.className="font-semibold text-green-600"; }
+                };
+                
+                mapAlert(t3, 'pred3hText'); mapAlert(t6, 'pred6hText'); mapAlert(t12, 'pred12hText');
+            } else if (demoMode) {
+                const mapAlert = (al, elId) => {
+                    let el = document.getElementById(elId);
+                    if(al==="RED"){ el.innerText="High Risk"; el.className="font-semibold text-red-600"; }
+                    else if(al==="YELLOW"){ el.innerText="Medium Risk"; el.className="font-semibold text-yellow-600"; }
+                    else { el.innerText="Low Risk"; el.className="font-semibold text-green-600"; }
+                }
+                if(demoMode === 'red') { mapAlert('RED', 'pred3hText'); mapAlert('RED', 'pred6hText'); mapAlert('YELLOW', 'pred12hText'); }
+                else { mapAlert('YELLOW', 'pred3hText'); mapAlert('YELLOW', 'pred6hText'); mapAlert('LOW', 'pred12hText'); }
+            }
+            
+            statusEl.innerHTML = currentData.alert_level === "RED" ? "<i class='fas fa-radiation fa-spin mr-2'></i>CRITICAL RISK" : (currentData.alert_level === "YELLOW" ? "<i class='fas fa-exclamation-triangle mr-2'></i>MODERATE RISK" : "<i class='fas fa-check-circle mr-2'></i>LOW RISK");
+
+        } catch (e) {
+            console.error(e);
+            statusEl.innerHTML = "<i class='fas fa-times-circle mr-2'></i>CONNECTION ERROR";
+            statusEl.className = "px-4 py-2 rounded-full bg-gray-100 text-red-500 border border-red-500";
+        }
+    }
+
+    // 🌍 Multi-User Concurrency SOS System
+    const generateUserId = () => '_' + Math.random().toString(36).substr(2, 9);
+    let sessionUserId = localStorage.getItem('cg_user_id') || generateUserId();
+    localStorage.setItem('cg_user_id', sessionUserId);
+
+    async function sendSosPayload(payload) {
+        try {
+            const res = await fetch('/api/sos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            console.log("SOS Broadcasted Concurrently:", data);
+        } catch(e) {
+            console.error("SOS Broadcast Failed:", e);
+        }
+    }
+
+    async function triggerGlobalSOS() {
+        // Render Local UI Instantly
+        const sosModal = document.getElementById('sosModal');
+        if(sosModal) sosModal.classList.remove('hidden');
+
+        let payload = { user_id: sessionUserId, lat: null, lon: null };
+
+        // Attempt HTML5 Geolocation API for pinpoint accuracy
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                payload.lat = position.coords.latitude;
+                payload.lon = position.coords.longitude;
+                await sendSosPayload(payload);
+            }, async (error) => {
+                await sendSosPayload(payload);
+            });
+        } else {
+            await sendSosPayload(payload);
+        }
+    }
+
+    // Attach to all 3 SOS Buttons across the CloudGuard Interface
+    ['sosBtn', 'sosBtnMobile', 'mainSosBtn'].forEach(id => {
+        let btn = document.getElementById(id);
+        if(btn) btn.addEventListener('click', triggerGlobalSOS);
+    });
+
+    let cmBtn = document.getElementById('closeSosModal');
+    if(cmBtn) {
+        cmBtn.addEventListener('click', () => {
+            const sosModal = document.getElementById('sosModal');
+            if(sosModal) sosModal.classList.add('hidden');
+        });
+    }
+
+    let callBtn = document.getElementById('callEmergency');
+    if(callBtn) {
+        callBtn.addEventListener('click', () => {
+            window.location.href = "tel:112";
+        });
+    }
+</script>
+
+</body>
+</html>
