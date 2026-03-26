@@ -6,7 +6,13 @@ import time
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://cloud-burst-detection-system-frontend-8lux5vuy.vercel.app"
+        ]
+    }
+})
 
 # Load the AI model once at startup
 print("Loading Emergency AI Brain...")
