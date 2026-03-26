@@ -942,6 +942,9 @@
 
 
 <script>
+    // ❗ IMPORTANT: REPLACE THIS WITH YOUR RENDER.COM BACKEND URL ❗
+    const BACKEND_URL = 'https://your-custom-name.onrender.com';
+
     let tempChartInstance = null;
     let precipChartInstance = null;
 
@@ -962,7 +965,7 @@
         const sp_humidity = (0.622 * e_actual) / (pres - (0.378 * e_actual));
 
         const payload = { temperature: temp, humidity: sp_humidity, pressure: pres };
-        const res = await fetch('/check_weather', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const res = await fetch(BACKEND_URL + '/check_weather', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         return await res.json();
     }
 
@@ -1162,7 +1165,7 @@
 
     async function sendSosPayload(payload) {
         try {
-            const res = await fetch('/api/sos', {
+            const res = await fetch(BACKEND_URL + '/api/sos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
