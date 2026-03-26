@@ -1,4 +1,4 @@
-python==3.10.12
+
 setuptools
 wheel
 Flask==2.3.2
