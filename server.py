@@ -1,8 +1,12 @@
+from flask_cors import CORS
 from flask import Flask, request, jsonify
 import xgboost as xgb
 import pandas as pd
 
 app = Flask(__name__)
+
+# 🌍 Allow Vercel Frontend to talk to this Render Server!
+CORS(app)
 
 # Load the AI Brain once when the server starts
 print("Loading Emergency AI Brain...")
