@@ -86,4 +86,3 @@ def trigger_sos():
         "message": "SOS Broadcast received.",
         "active_beacons": len(active_sos_alerts)
     })
-
