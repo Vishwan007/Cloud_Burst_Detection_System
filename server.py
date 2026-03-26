@@ -6,13 +6,18 @@ import time
 import os
 
 app = Flask(__name__)
+
 CORS(app, resources={
-    r"/*": {
-        "origins": [
-            "https://cloud-burst-detection-system-frontend-8lux5vuy.vercel.app"
-        ]
-    }
+    r"/*": {"origins": "*"}
 })
+
+# ✅ ADD THIS HERE
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    return response
 
 # Load the AI model once at startup
 print("Loading Emergency AI Brain...")
@@ -28,8 +33,10 @@ def home():
     return "Cloud Burst API is running 🚀"
 
 # 🌦️ Weather Prediction Endpoint
-@app.route('/check_weather', methods=['POST'])
+@app.route('/check_weather', methods=['POST','OPTIONS'])
 def predict_burst():
+    if request.method == 'OPTIONS':
+        return '', 200  # Handle preflight
     data = request.get_json()
     
     try:
