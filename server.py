@@ -2,26 +2,28 @@ from flask_cors import CORS
 from flask import Flask, request, jsonify
 import xgboost as xgb
 import pandas as pd
+import time
+import os
 
 app = Flask(__name__)
-
-# 🌍 Allow Vercel Frontend to talk to this Render Server!
 CORS(app)
 
-# Load the AI Brain once when the server starts
+# Load the AI model once at startup
 print("Loading Emergency AI Brain...")
 model = xgb.XGBClassifier()
-model.load_model("cloudburst_xgboost_master.json")
 
-# 🌍 Serve the Beautiful 3D Frontend UI!
+# ✅ Safe path handling (VERY IMPORTANT for deployment)
+model_path = os.path.join(os.path.dirname(__file__), "cloudburst_xgboost_master.json")
+model.load_model(model_path)
+
+# 🌍 Home route
 @app.route('/')
 def home():
-    return open("frontend.html").read()
+    return "Cloud Burst API is running 🚀"
 
-# This is the "Endpoint" that mobile apps or weather stations will hit!
+# 🌦️ Weather Prediction Endpoint
 @app.route('/check_weather', methods=['POST'])
 def predict_burst():
-    # 1. Look at the weather data sent to us by the user
     data = request.get_json()
     
     try:
@@ -31,42 +33,38 @@ def predict_burst():
             'Pressure_hPa': float(data['pressure'])
         }])
         
-        # 2. Ask the XGBoost AI for specific PROBABILITIES rather than just 0 or 1
         probability_scores = model.predict_proba(live_df)[0]
-        cloud_burst_risk = float(probability_scores[1]) # Probability of a Cloud Burst (0.0 to 1.0)
+        cloud_burst_risk = float(probability_scores[1])
         
-        # 3. Generate the Multi-Tier Alert Response based on risk levels
         if cloud_burst_risk >= 0.70:
             return jsonify({
                 "alert_level": "RED",
                 "status": "CRITICAL RISK",
-                "message": f"🚨 EXTREME CLOUD BURST PROBABILITY ({cloud_burst_risk*100:.1f}% Match). Evacuation warning issued via SMS! 🚨"
+                "message": f"🚨 EXTREME CLOUD BURST PROBABILITY ({cloud_burst_risk*100:.1f}% Match). Evacuation warning issued! 🚨"
             })
         elif cloud_burst_risk >= 0.30:
             return jsonify({
                 "alert_level": "YELLOW",
                 "status": "MODERATE RISK",
-                "message": f"⚠️ ATMOSPHERIC INSTABILITY ({cloud_burst_risk*100:.1f}% Match). Conditions worsening. Monitor closely. ⚠️"
+                "message": f"⚠️ ATMOSPHERIC INSTABILITY ({cloud_burst_risk*100:.1f}% Match). Monitor closely."
             })
         else:
             return jsonify({
                 "alert_level": "GREEN",
                 "status": "NO RISK",
-                "message": f"✅ Atmospheric conditions are extremely stable ({cloud_burst_risk*100:.1f}% chance of burst)."
+                "message": f"✅ Stable conditions ({cloud_burst_risk*100:.1f}% chance of burst)."
             })
             
     except Exception as e:
         return jsonify({"error": str(e)})
 
-
-import time
-
-# Thread-safe in-memory storage for multi-user active SOS beacons
+# 🚨 SOS API
 active_sos_alerts = []
 
 @app.route('/api/sos', methods=['POST'])
 def trigger_sos():
     data = request.get_json() or {}
+    
     lat = data.get('lat', 'Unknown')
     lon = data.get('lon', 'Unknown')
     user_id = data.get('user_id', 'Anonymous')
@@ -79,19 +77,13 @@ def trigger_sos():
         "status": "DISPATCHED"
     }
     
-    # Thread-safe append
     active_sos_alerts.append(alert_record)
     
-    # Secure logging for server monitoring of concurrent requests
-    print(f"\n🚨🚨 [CONCURRENT SOS DETECTED] User: {user_id} | Lat:{lat}, Lon:{lon} | Total Active Beacons: {len(active_sos_alerts)} 🚨🚨\n", flush=True)
+    print(f"\n🚨 SOS DETECTED | User: {user_id} | Lat:{lat}, Lon:{lon} | Active: {len(active_sos_alerts)}\n", flush=True)
     
     return jsonify({
-        "success": True, 
-        "message": "SOS Broadcast received.", 
+        "success": True,
+        "message": "SOS Broadcast received.",
         "active_beacons": len(active_sos_alerts)
     })
 
-if __name__ == '__main__':
-
-    print("📡 Cloud Burst Alert API is officially LIVE on Port 5000!")
-    app.run(host='0.0.0.0', port=8080)
