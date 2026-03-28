@@ -7,16 +7,15 @@ import os
 
 app = Flask(__name__)
 
-CORS(app, resources={
-    r"/*": {"origins": "*"}
-})
+CORS(app, supports_credentials=True)
 
 # ✅ ADD THIS HERE
 @app.after_request
 def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
 # Load the AI model once at startup
@@ -33,43 +32,57 @@ def home():
     return "Cloud Burst API is running 🚀"
 
 # 🌦️ Weather Prediction Endpoint
-@app.route('/check_weather', methods=['POST','OPTIONS'])
+@app.route('/check_weather', methods=['POST', 'OPTIONS'])
 def predict_burst():
+
+    # ✅ Handle preflight request
     if request.method == 'OPTIONS':
-        return '', 200  # Handle preflight
+        response = jsonify({})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "POST,OPTIONS"
+        return response, 200
+
+    # ✅ Handle POST request
     data = request.get_json()
-    
+
     try:
         live_df = pd.DataFrame([{
             'Temp_C': float(data['temperature']),
             'Humidity_Ratio': float(data['humidity']),
             'Pressure_hPa': float(data['pressure'])
         }])
-        
+
         probability_scores = model.predict_proba(live_df)[0]
         cloud_burst_risk = float(probability_scores[1])
-        
+
         if cloud_burst_risk >= 0.70:
-            return jsonify({
+            response = jsonify({
                 "alert_level": "RED",
                 "status": "CRITICAL RISK",
-                "message": f"🚨 EXTREME CLOUD BURST PROBABILITY ({cloud_burst_risk*100:.1f}% Match). Evacuation warning issued! 🚨"
+                "message": "🚨 EXTREME CLOUD BURST RISK"
             })
         elif cloud_burst_risk >= 0.30:
-            return jsonify({
+            response = jsonify({
                 "alert_level": "YELLOW",
                 "status": "MODERATE RISK",
-                "message": f"⚠️ ATMOSPHERIC INSTABILITY ({cloud_burst_risk*100:.1f}% Match). Monitor closely."
+                "message": "⚠️ MODERATE RISK"
             })
         else:
-            return jsonify({
+            response = jsonify({
                 "alert_level": "GREEN",
                 "status": "NO RISK",
-                "message": f"✅ Stable conditions ({cloud_burst_risk*100:.1f}% chance of burst)."
+                "message": "✅ SAFE CONDITIONS"
             })
-            
+
+        # ✅ ADD CORS HEADERS HERE (IMPORTANT)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
+
     except Exception as e:
-        return jsonify({"error": str(e)})
+        response = jsonify({"error": str(e)})
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        return response
 
 # 🚨 SOS API
 active_sos_alerts = []
